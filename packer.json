@@ -1,0 +1,70 @@
+{
+    "variables": {
+        "aws_region": "{{env `AWS_REGION`}}",
+        "ami_name": "hardened-linux-ami-{{isotime \"2006.01.02\"}}"
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "region": "{{user `aws_region`}}",
+            "instance_type": "t2.micro",
+            "ssh_username": "ec2-user",
+            "ami_name": "{{user `ami_name`}}",
+            "ami_description": "CIS Hardened Amazon Linux 2 AMI",
+            "associate_public_ip_address": "true",
+            "source_ami_filter": {
+                "filters": {
+                    "name": "amzn2-ami-hvm-*-gp2",
+                    "architecture": "x86_64",
+                    "root-device-type": "ebs",
+                    "virtualization-type": "hvm"
+                },
+                "owners": [
+                    "amazon"
+                ],
+                "most_recent": true
+            },
+            "ami_block_device_mappings": [
+                {
+                    "device_name": "/dev/sdf",
+                    "volume_type": "gp2",
+                    "volume_size": 20,
+                    "delete_on_termination": true
+                }
+            ],
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/sdf",
+                    "volume_type": "gp2",
+                    "volume_size": 20,
+                    "delete_on_termination": true
+                }
+            ],
+            "tags": {
+                "Name": "{{user `ami_name`}}"
+            },
+            "run_tags": {
+                "Name": "{{user `ami_name`}}"
+            },
+            "run_volume_tags": {
+                "Name": "{{user `ami_name`}}"
+            },
+            "snapshot_tags": {
+                "Name": "{{user `ami_name`}}"
+            }
+        }
+    ],
+    "provisioners": [
+        {
+            "execute_command": "echo '{{user `ssh_username`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "type": "shell",
+            "scripts": [
+                "scripts/common.sh",
+                "scripts/partition.sh",
+                "scripts/harden.sh",
+                "scripts/cleanup.sh"
+            ],
+            "expect_disconnect": true
+        }
+    ]
+}
